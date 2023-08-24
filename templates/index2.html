@@ -1,0 +1,44 @@
+from flask import Flask, request, render_template_string
+import os
+import pytube
+
+app = Flask(__name__)
+
+index_html = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Downloader</title>
+</head>
+<body>
+    <h1>Video Downloader</h1>
+    <form action="/" method="POST">
+        <label for="video_url">Video URL:</label>
+        <input type="text" id="video_url" name="video_url" required>
+        <button type="submit">Download</button>
+    </form>
+</body>
+</html>
+"""
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        video_url = request.form['video_url']
+        download_video(video_url)
+    return render_template_string(index_html)
+
+def download_video(url):
+    yt = pytube.YouTube(url)
+    stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').last()
+
+    if not os.path.exists('downloads'):
+        os.makedirs('downloads')
+
+    file_path = os.path.join('downloads', yt.title + '.mp4')
+    stream.download(output_path='downloads', filename=yt.title)
+
+if __name__ == '__main__':
+    app.run(debug=True)
